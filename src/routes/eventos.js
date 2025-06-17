@@ -1,16 +1,28 @@
-const Router = require('express');
-const { getEventos, getEventosById, postEventos, putEventos, deleteEventos } = require('../controllers/eventosController');
+const Router = require("express");
+const {
+  getEventos,
+  getEventosById,
+  postEventos,
+  putEventos,
+  deleteEventos,
+  participarEvento,
+  abandonarEvento,
+} = require("../controllers/eventosController");
 
 const router = Router();
 
-router.get('/', getEventos);
+router.get("/", getEventos);
 
-router.get('/:id', getEventosById);
+router.get("/:id", getEventosById);
 
-router.post('/', postEventos);
+router.post("/participar", participarEvento);
 
-router.put('/:id', putEventos);
+router.delete("/abandonar", abandonarEvento);
 
-router.delete('/:id', deleteEventos);
+router.post("/", postEventos);
+
+router.put("/:id", putEventos);
+
+router.delete("/:id", deleteEventos);
 
 module.exports = router;

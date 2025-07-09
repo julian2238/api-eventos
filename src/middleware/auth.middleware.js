@@ -1,23 +1,28 @@
-const validarJWT = async(req, res, next) => {
-    const authHeader = req.headers['Authorization'];
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+const jwtUtils = require("../utils/jwt.utils");
 
-    if (!token) {
-        return res.status(401).send({
-            status: false,
-            message: 'No se ha proporcionado un token de autenticación'
-        });
-    }
+const validarJWT = async (req, res, next) => {
+	const authHeader = req.headers["authorization"];
+	const token = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
 
-    try {
+	if (!token) {
+		return res.status(401).send({
+			status: false,
+			message: "No se ha proporcionado un token de autenticación",
+		});
+	}
 
-        //Validar token firebase
-        
-    } catch (error) {
-        return res.status(401).send({
-            status: false,
-            message: 'Token de autenticación inválido'
-        });
-    }
-    
-}
+	try {
+		const decoded = jwtUtils.verifyToken(token);
+		req.user = decoded;
+		next();
+	} catch (error) {
+		if (error.name === "TokenExpiredError") {
+			return res.status(401).json({ status: false, message: "Token Expirado" });
+		}
+		return res.status(401).json({ status: false, message: "Token Inválido" });
+	}
+};
+
+module.exports = {
+	validarJWT,
+};

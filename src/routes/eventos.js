@@ -1,28 +1,30 @@
 const Router = require("express");
 const {
-  getEventos,
-  getEventosById,
-  postEventos,
-  putEventos,
-  deleteEventos,
-  participarEvento,
-  abandonarEvento,
+	getEventos,
+	getEventosById,
+	postEventos,
+	putEventos,
+	deleteEventos,
+	participarEvento,
+	abandonarEvento,
 } = require("../controllers/eventosController");
+
+const { validarJWT } = require("../middleware/auth.middleware");
 
 const router = Router();
 
-router.get("/", getEventos);
+router.get("/", validarJWT, getEventos);
 
-router.get("/:id", getEventosById);
+router.get("/:id", validarJWT, getEventosById);
 
-router.post("/participar", participarEvento);
+router.post("/participar", validarJWT, participarEvento);
 
-router.delete("/abandonar", abandonarEvento);
+router.delete("/abandonar", validarJWT, abandonarEvento);
 
-router.post("/", postEventos);
+router.post("/", validarJWT, postEventos);
 
-router.put("/:id", putEventos);
+router.put("/:id", validarJWT, putEventos);
 
-router.delete("/:id", deleteEventos);
+router.delete("/:id", validarJWT, deleteEventos);
 
 module.exports = router;

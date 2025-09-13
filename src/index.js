@@ -9,10 +9,8 @@ app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
 
-app.use("/api/v1/auth", require("./routes/auth"));
+app.use("/api/v1", require("./routes"));
 
-app.use("/api/v1/eventos", require("./routes/eventos"));
+app.listen(8000);
 
-app.listen(4000);
-
-console.log("Server running on port 4000");
+console.log("Server running on port 8000");

@@ -1,7 +1,7 @@
-const { default: axios } = require("axios");
 const { db, admin } = require("../firebase");
 const { getDate } = require("../utils/utils");
 const jwtUtils = require("../utils/jwt.utils");
+const authService = require("../services/authService");
 
 const signUp = async (req, res) => {
 	try {
@@ -45,7 +45,6 @@ const signUp = async (req, res) => {
 			message: "Usuario creado correctamente",
 		});
 	} catch (error) {
-		console.log(error);
 		res.status(500).send({
 			status: false,
 			message: "Error al crear el usuario",
@@ -55,48 +54,26 @@ const signUp = async (req, res) => {
 
 const signIn = async (req, res) => {
 	try {
-		const { email, password } = req.body;
-		const URL = `${process.env.URL_SIGNIN}${process.env.API_KEY}`;
+		const { email, password, platform } = req.body;
 
-		const response = await axios.post(URL, {
-			email,
-			password,
-			returnSecureToken: true,
-		});
-
-		const { localId: uid } = response.data;
-
-		const userData = await getUserDataByUid(uid);
-
-		if (!userData) {
-			return res.send({
+		if (!email || !password || !platform) {
+			return res.status(400).send({
 				status: false,
-				message: "No existe el usuario.",
+				message: "Faltan campos requeridos",
 			});
 		}
 
-		const token = jwtUtils.generateAccessToken(uid);
-		const refreshToken = jwtUtils.generateRefreshToken(uid);
+		const data = await authService.login(email, password, platform);
 
 		res.send({
 			status: true,
 			message: "Usuario autenticado correctamente",
-			data: {
-				...userData,
-				token,
-				refreshToken,
-				uid,
-			},
+			data,
 		});
 	} catch (error) {
-		console.log(error);
-		const firebaseError = error.response?.data?.error;
-
-		const message = firebaseError?.message || "Error desconocido de autenticación";
-
-		res.status(400).send({
+		res.status(500).send({
 			status: false,
-			message,
+			message: error.message,
 		});
 	}
 };
@@ -183,21 +160,6 @@ const verifyFieldsUser = (data) => {
 	}
 
 	return true;
-};
-
-/**
- *
- * @param {string} uid
- * @returns { object | boolean }
- */
-const getUserDataByUid = async (uid) => {
-	const user = await db.collection("users").doc(uid).get();
-
-	if (!user.exists) {
-		return false;
-	}
-
-	return user.data();
 };
 
 module.exports = {

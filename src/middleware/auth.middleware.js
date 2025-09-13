@@ -23,6 +23,15 @@ const validarJWT = async (req, res, next) => {
 	}
 };
 
+const checkRole = (roles) => {
+	return (req, res, next) => {
+		if (roles.includes(req.user.role)) return next();
+
+		return res.status(403).json({ status: false, message: "No autorizado" });
+	};
+};
+
 module.exports = {
 	validarJWT,
+	checkRole,
 };

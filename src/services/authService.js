@@ -1,12 +1,25 @@
-const { saveRefreshToken } = require("./tokenService");
 const { db, admin } = require("../firebase");
-const { getDate } = require("../utils/utils");
 const jwtUtils = require("../utils/jwt.utils");
 const { default: axios } = require("axios");
+const { saveRefreshToken, verifyRefreshToken } = require("./tokenService");
+
+const createUser = async (data) => {
+	return await admin.auth().createUser({
+		email: data.email,
+		password: data.password,
+		displayName: data.fullName,
+		phoneNumber: data.phone,
+		disabled: false,
+		emailVerified: false,
+		uid: data.document,
+	});
+};
 
 const login = async (email, password, platform) => {
 	const URL = `${process.env.URL_SIGNIN}${process.env.API_KEY}`;
 	let response = "";
+	let token = "";
+	let refreshToken = "";
 
 	try {
 		response = await axios.post(URL, {
@@ -29,10 +42,17 @@ const login = async (email, password, platform) => {
 
 	if (platform === "web" && userData.role !== "ADMIN") throw new Error("No autorizado.");
 
-	const token = jwtUtils.generateAccessToken(uid, userData.role);
-	const refreshToken = jwtUtils.generateRefreshToken(uid, userData.role);
+	try {
+		const role = userData.role || "USUARIO";
 
-	await saveRefreshToken(uid, refreshToken);
+		token = jwtUtils.generateAccessToken(uid, role, platform);
+		refreshToken = jwtUtils.generateRefreshToken(uid, role, platform);
+
+		await saveRefreshToken(uid, refreshToken, platform);
+	} catch (error) {
+		console.log(error);
+		throw new Error("Error al generar los tokens.");
+	}
 
 	return {
 		token,
@@ -43,7 +63,28 @@ const login = async (email, password, platform) => {
 	};
 };
 
-/** Functions **/
+const validateRefreshToken = async (refreshToken) => {
+	const decoded = jwtUtils.verifyToken(refreshToken);
+
+	const { uid, role, platform } = decoded;
+
+	const isValid = await verifyRefreshToken(uid, refreshToken, platform);
+
+	if (!isValid) {
+		throw new Error("Invalid refresh token");
+	}
+
+	const newAccessToken = jwtUtils.generateAccessToken(uid, role, platform);
+	const newRefreshToken = jwtUtils.generateRefreshToken(uid, role, platform);
+
+	return {
+		token: newAccessToken,
+		refreshToken: newRefreshToken,
+	};
+};
+
+/*---------- Functions ----------/
+
 /**
  *
  * @param {string} uid
@@ -60,5 +101,7 @@ const getUserDataByUid = async (uid) => {
 };
 
 module.exports = {
+	createUser,
 	login,
+	validateRefreshToken,
 };

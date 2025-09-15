@@ -9,7 +9,7 @@ const {
 	abandonarEvento,
 } = require("../controllers/eventosController");
 
-const { validarJWT } = require("../middleware/auth.middleware");
+const { validarJWT, checkRole } = require("../middleware/auth.middleware");
 
 const router = Router();
 
@@ -19,12 +19,12 @@ router.get("/:id", validarJWT, getEventosById);
 
 router.post("/participar", validarJWT, participarEvento);
 
-router.delete("/abandonar", validarJWT, abandonarEvento);
+router.delete("/abandonar", validarJWT, checkRole, abandonarEvento);
 
-router.post("/", validarJWT, postEventos);
+router.post("/", validarJWT, checkRole, postEventos);
 
-router.put("/:id", validarJWT, putEventos);
+router.put("/:id", validarJWT, checkRole, putEventos);
 
-router.delete("/:id", validarJWT, deleteEventos);
+router.delete("/:id", validarJWT, checkRole, deleteEventos);
 
 module.exports = router;

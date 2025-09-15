@@ -6,8 +6,8 @@ const jwt = require("jsonwebtoken");
  * @param {string} role
  * @returns {string} The generated access token.
  */
-const generateAccessToken = (uid, role) => {
-	return jwt.sign({ uid, role }, process.env.JWT_SECRET, { expiresIn: "1h" });
+const generateAccessToken = (uid, role, platform) => {
+	return jwt.sign({ uid, role, platform }, process.env.JWT_SECRET, { expiresIn: "1h" });
 };
 
 /**
@@ -17,7 +17,7 @@ const generateAccessToken = (uid, role) => {
  * @returns {string} The generated refresh token.
  */
 const generateRefreshToken = (uid, role) => {
-	return jwt.sign({ uid, role }, process.env.JWT_SECRET, { expiresIn: "7d" });
+	return jwt.sign({ uid, role, platform }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
 /**

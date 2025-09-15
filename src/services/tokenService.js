@@ -1,63 +1,66 @@
 const { db } = require("../firebase");
 const bcrypt = require("bcrypt");
 
-const saveRefreshToken = async (uid, refreshToken) => {
+const ALLOWED_PLATFORMS = ["web", "mobile"];
+
+const saveRefreshToken = async (uid, refreshToken, platform) => {
+	if (!ALLOWED_PLATFORMS.includes(platform)) {
+		throw new Error("Plataforma no permitida.");
+	}
+
 	const createdAt = Date.now();
 	const expiresAt = createdAt + parseInt(process.env.JWT_REFRESH_TOKEN_EXPIRATION) * 24 * 60 * 60 * 1000;
 
 	const hashedToken = await bcrypt.hash(refreshToken, 10);
 
-	await db.collection("refreshTokens").add({
-		uid,
+	const tokenRef = db.collection("users").doc(uid).collection("tokens").doc(platform);
+
+	await tokenRef.set({
 		token: hashedToken,
 		createdAt,
 		expiresAt,
 	});
 };
 
-const verifyRefreshToken = async (uid, refreshToken) => {
-	const tokensSnapshot = await db.collection("refreshTokens").where("uid", "==", uid).get();
+const verifyRefreshToken = async (uid, refreshToken, platform) => {
+	if (!ALLOWED_PLATFORMS.includes(platform)) {
+		throw new Error("Plataforma no permitida.");
+	}
 
-	if (tokensSnapshot.empty) return false;
+	const tokenDocRef = db.collection("users").doc(uid).collection("tokens").doc(platform);
+	const tokenDoc = await tokenDocRef.get();
 
-	for (const tokenDoc of tokensSnapshot.docs) {
-		const data = tokenDoc.data();
-		const isMatch = await bcrypt.compare(refreshToken, data.token);
+	if (!tokenDoc.exists) return false;
 
-		if (isMatch && data.expiresAt > Date.now()) {
-			return true;
-		}
+	const data = tokenDoc.data();
+	const isMatch = await bcrypt.compare(refreshToken, data.token);
+
+	if (isMatch && data.expiresAt > Date.now()) {
+		return true;
 	}
 
 	return false;
 };
 
-const revokeRefreshToken = async (uid, refreshToken) => {
-	const tokensSnapshot = await db.collection("refreshTokens").where("uid", "==", uid).get();
+const revokeRefreshToken = async (uid, platform) => {
+	const tokenDocRef = db.collection("users").doc(uid).collection("tokens").doc(platform);
+	const tokenDoc = await tokenDocRef.get();
 
-	if (tokensSnapshot.empty) return false;
+	if (!tokenDoc.exists) return false;
 
-	for (const tokenDoc of tokensSnapshot.docs) {
-		const data = tokenDoc.data();
-		const isMatch = await bcrypt.compare(refreshToken, data.token);
+	await tokenDocRef.delete();
 
-		if (isMatch) {
-			await tokenDoc.ref.delete();
-			return true;
-		}
-	}
-
-	return false;
+	return true;
 };
 
 const revokeAllRefreshTokens = async (uid) => {
-	const tokensSnapshot = await db.collection("refreshTokens").where("uid", "==", uid).get();
+	const tokensSnapshot = await db.collection("users").doc(uid).collection("tokens").get();
 
 	if (tokensSnapshot.empty) return false;
 
 	const batch = db.batch();
 
-	tokensSnapshot.docs.forEach((tokenDoc) => batch.delete(tokenDoc.ref));
+	tokensSnapshot.forEach((doc) => batch.delete(doc.ref));
 
 	await batch.commit();
 

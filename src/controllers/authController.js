@@ -1,4 +1,3 @@
-const { db, admin } = require("../firebase");
 const utils = require("../utils/utils");
 const authService = require("../services/authService");
 const userService = require("../services/userService");

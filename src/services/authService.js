@@ -1,7 +1,8 @@
-const { db, admin } = require("../firebase");
-const jwtUtils = require("../utils/jwt.utils");
+const { admin } = require("../firebase");
 const { default: axios } = require("axios");
-const { saveRefreshToken, verifyRefreshToken } = require("./tokenService");
+const jwtUtils = require("../utils/jwt.utils");
+const tokenService = require("./tokenService");
+const userService = require("./userService");
 
 const createUser = async (data) => {
 	return await admin.auth().createUser({
@@ -36,7 +37,7 @@ const login = async (email, password, platform) => {
 
 	const { localId: uid } = response.data;
 
-	const userData = await getUserDataByUid(uid);
+	const userData = await userService.getUserData(uid);
 
 	if (!userData) throw new Error("No existe el usuario.");
 
@@ -47,7 +48,7 @@ const login = async (email, password, platform) => {
 	token = jwtUtils.generateAccessToken(uid, role, platform);
 	refreshToken = jwtUtils.generateRefreshToken(uid, role, platform);
 
-	await saveRefreshToken(uid, refreshToken, platform);
+	await tokenService.saveRefreshToken(uid, refreshToken, platform);
 
 	return {
 		token,
@@ -63,7 +64,7 @@ const validateRefreshToken = async (refreshToken) => {
 
 	const { uid, role, platform } = decoded;
 
-	const isValid = await verifyRefreshToken(uid, refreshToken, platform);
+	const isValid = await tokenService.verifyRefreshToken(uid, refreshToken, platform);
 
 	if (!isValid) {
 		throw new Error("Invalid refresh token");
@@ -76,23 +77,6 @@ const validateRefreshToken = async (refreshToken) => {
 		token: newAccessToken,
 		refreshToken: newRefreshToken,
 	};
-};
-
-/*---------- Functions ----------/
-
-/**
- *
- * @param {string} uid
- * @returns { object | boolean }
- */
-const getUserDataByUid = async (uid) => {
-	const user = await db.collection("users").doc(uid).get();
-
-	if (!user.exists) {
-		return false;
-	}
-
-	return user.data();
 };
 
 module.exports = {

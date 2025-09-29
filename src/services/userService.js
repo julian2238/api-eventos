@@ -1,5 +1,18 @@
 const { db } = require("../firebase");
 
+const getUserData = async (uid) => {
+	const userSnapshot = await db.collection("users").doc(uid).get();
+
+	if (!userSnapshot.exists) throw new Error("Usuario no encontrado.");
+
+	const dataUser = userSnapshot.data();
+
+	delete data.role;
+	delete data.dtCreation;
+
+	return data;
+};
+
 /**
  * Insert user data in firestore
  * @param {string} uid
@@ -29,6 +42,7 @@ const verifyUser = async (document) => {
 };
 
 module.exports = {
+	getUserData,
 	verifyUser,
 	insertUser,
 };

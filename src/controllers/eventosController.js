@@ -1,18 +1,10 @@
-const { db, admin } = require("../firebase");
-const {
-	createEvent,
-	addParticipant,
-	removeParticipant,
-	updateEvent,
-	deleteEvent,
-	getAllEvents,
-	obtenerDataEvento,
-} = require("../services/eventoService");
+const { db } = require("../firebase");
 const utils = require("../utils/utils");
+const eventService = require("../services/eventoService");
 
 const getEventos = async (_, res) => {
 	try {
-		const eventos = await getAllEvents(eventosSnap);
+		const eventos = await eventService.getAllEvents(eventosSnap);
 
 		if (eventos.length === 0) {
 			return res.status(200).send({
@@ -58,13 +50,11 @@ const getEventosById = async (req, res) => {
 			});
 		}
 
-		//* Obtener las rutas asociadas al evento
-		const routesSnap = await eventoRef.collection("routes").get();
-		const routes = routesSnap.docs.map((doc) => doc.data());
+		const dataEvento = { id: eventoSnap.id, ...eventoSnap.data() };
 
-		//* Formatear la respuesta del evento
-		const dataEvento = eventoSnap.data();
-		dataEvento.routes = routes;
+		delete data.dtCreation;
+		delete data.createdBy;
+		delete data.favoritesCount;
 
 		res.status(200).send({
 			status: true,
@@ -90,7 +80,7 @@ const participarEvento = async (req, res) => {
 			});
 		}
 
-		await addParticipant(idEvento, idUsuario);
+		await eventService.addParticipant(idEvento, idUsuario);
 
 		res.status(200).send({
 			status: true,
@@ -115,7 +105,7 @@ const abandonarEvento = async (req, res) => {
 			});
 		}
 
-		await removeParticipant(idEvento, idUsuario);
+		await eventService.removeParticipant(idEvento, idUsuario);
 
 		res.status(200).send({
 			status: true,
@@ -140,7 +130,7 @@ const postEventos = async (req, res) => {
 			});
 		}
 
-		const result = await createEvent({ ...data, uid: req.user.uid });
+		const result = await eventService.createEvent({ ...data, uid: req.user.uid });
 
 		res.status(200).send({
 			status: true,
@@ -174,7 +164,7 @@ const putEventos = async (req, res) => {
 			});
 		}
 
-		await updateEvent(idEvento, data);
+		await eventService.updateEvent(idEvento, data);
 
 		res.json({
 			status: true,
@@ -199,7 +189,7 @@ const deleteEventos = async (req, res) => {
 			});
 		}
 
-		await deleteEvent(idEvento);
+		await eventService.deleteEvent(idEvento);
 
 		res.status(200).send({
 			status: true,

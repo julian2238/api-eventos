@@ -1,7 +1,7 @@
 const { db } = require("../firebase");
 const bcrypt = require("bcrypt");
 
-const ALLOWED_PLATFORMS = ["web", "mobile"];
+const ALLOWED_PLATFORMS = ["web", "movil"];
 
 const saveRefreshToken = async (uid, refreshToken, platform) => {
 	if (!ALLOWED_PLATFORMS.includes(platform)) {

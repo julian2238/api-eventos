@@ -1,3 +1,5 @@
+const { db } = require("../firebase");
+
 /**
  * Insert user data in firestore
  * @param {string} uid

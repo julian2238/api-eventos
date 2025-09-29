@@ -16,7 +16,7 @@ const generateAccessToken = (uid, role, platform) => {
  * @param {string} role
  * @returns {string} The generated refresh token.
  */
-const generateRefreshToken = (uid, role) => {
+const generateRefreshToken = (uid, role, platform) => {
 	return jwt.sign({ uid, role, platform }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 

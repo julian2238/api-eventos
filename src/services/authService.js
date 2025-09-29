@@ -42,17 +42,12 @@ const login = async (email, password, platform) => {
 
 	if (platform === "web" && userData.role !== "ADMIN") throw new Error("No autorizado.");
 
-	try {
-		const role = userData.role || "USUARIO";
+	const role = userData.role || "USUARIO";
 
-		token = jwtUtils.generateAccessToken(uid, role, platform);
-		refreshToken = jwtUtils.generateRefreshToken(uid, role, platform);
+	token = jwtUtils.generateAccessToken(uid, role, platform);
+	refreshToken = jwtUtils.generateRefreshToken(uid, role, platform);
 
-		await saveRefreshToken(uid, refreshToken, platform);
-	} catch (error) {
-		console.log(error);
-		throw new Error("Error al generar los tokens.");
-	}
+	await saveRefreshToken(uid, refreshToken, platform);
 
 	return {
 		token,

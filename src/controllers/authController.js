@@ -7,7 +7,7 @@ const signUp = async (req, res) => {
 	try {
 		const data = req.body;
 
-		if (!utils.validateFields(data)) {
+		if (!utils.validateFields(data, "user")) {
 			return res.status(400).send({
 				status: false,
 				message: "Faltan campos requeridos",
@@ -39,6 +39,7 @@ const signUp = async (req, res) => {
 			message: "Usuario creado correctamente",
 		});
 	} catch (error) {
+		console.log(error);
 		res.status(500).send({
 			status: false,
 			message: "Error al crear el usuario",
@@ -65,6 +66,7 @@ const signIn = async (req, res) => {
 			data,
 		});
 	} catch (error) {
+		console.log(error);
 		res.status(500).send({
 			status: false,
 			message: error.message,

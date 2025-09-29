@@ -17,9 +17,9 @@ router.get("/", validarJWT, getEventos);
 
 router.get("/:id", validarJWT, getEventosById);
 
-router.post("/participar", validarJWT, participarEvento);
+router.post("/unirse", validarJWT, participarEvento);
 
-router.delete("/abandonar", validarJWT, checkRole, abandonarEvento);
+router.post("/abandonar", validarJWT, abandonarEvento);
 
 router.post("/", validarJWT, checkRole, postEventos);
 

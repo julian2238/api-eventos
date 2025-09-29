@@ -23,13 +23,12 @@ const validarJWT = async (req, res, next) => {
 	}
 };
 
-const checkRole = () => {
-	return (req, res, next) => {
-		const ALLOWED_ROLES = ["ADMIN", "COORDINADOR"];
-		if (ALLOWED_ROLES.includes(req.user.role)) return next();
+const checkRole = (req, res, next) => {
+	console.log(req.user.role);
+	const ALLOWED_ROLES = ["ADMIN", "COORDINADOR"];
+	if (ALLOWED_ROLES.includes(req.user.role)) return next();
 
-		return res.status(403).json({ status: false, message: "No autorizado" });
-	};
+	return res.status(403).json({ status: false, message: "No autorizado" });
 };
 
 module.exports = {

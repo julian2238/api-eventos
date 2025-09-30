@@ -1,16 +1,39 @@
 const { db } = require("../firebase");
 
-const getUserData = async (uid) => {
+const getUsers = async () => {
+	const usersSnapshot = await db.collection("users").get();
+
+	if (usersSnapshot.empty) return [];
+
+	const users = [];
+
+	usersSnapshot.forEach((doc) => {
+		const data = doc.data();
+		delete data.dtCreation;
+		users.push(data);
+	});
+
+	return users;
+};
+
+const getUserById = async (uid) => {
 	const userSnapshot = await db.collection("users").doc(uid).get();
 
 	if (!userSnapshot.exists) throw new Error("Usuario no encontrado.");
 
-	const dataUser = userSnapshot.data();
+	const data = userSnapshot.data();
 
-	delete data.role;
 	delete data.dtCreation;
 
 	return data;
+};
+
+const updateUser = async (uid, data) => {
+	const userRef = db.collection("users").doc(uid);
+
+	await userRef.update(data);
+
+	return await getUserById(uid);
 };
 
 /**
@@ -42,7 +65,9 @@ const verifyUser = async (document) => {
 };
 
 module.exports = {
-	getUserData,
+	getUsers,
+	getUserById,
+	updateUser,
 	verifyUser,
 	insertUser,
 };

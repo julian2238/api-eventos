@@ -24,7 +24,6 @@ const validarJWT = async (req, res, next) => {
 };
 
 const checkRole = (req, res, next) => {
-	console.log(req.user.role);
 	const ALLOWED_ROLES = ["ADMIN", "COORDINADOR"];
 	if (ALLOWED_ROLES.includes(req.user.role)) return next();
 

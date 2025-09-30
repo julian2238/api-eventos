@@ -37,7 +37,7 @@ const login = async (email, password, platform) => {
 
 	const { localId: uid } = response.data;
 
-	const userData = await userService.getUserData(uid);
+	const userData = await userService.getUserById(uid);
 
 	if (!userData) throw new Error("No existe el usuario.");
 

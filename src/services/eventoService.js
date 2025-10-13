@@ -17,13 +17,13 @@ const createEvent = async (data) => {
 		routes: data.routes || [],
 	};
 
-	const eventoRef = await db.collection("eventos").add(newEvent);
+	const eventoRef = await db.collection("events").add(newEvent);
 
 	return eventoRef;
 };
 
 const updateEvent = async (idEvento, newData) => {
-	const eventoRef = db.collection("eventos").doc(idEvento);
+	const eventoRef = db.collection("events").doc(idEvento);
 	const eventoSnap = await eventoRef.get();
 
 	if (!eventoSnap.exists) {
@@ -39,12 +39,10 @@ const updateEvent = async (idEvento, newData) => {
 	};
 
 	await eventoRef.update(updatedData);
-
-	console.log(`Evento ${idEvento} actualizado correctamente`);
 };
 
 const deleteEvent = async (idEvento) => {
-	const eventoRef = db.collection("eventos").doc(idEvento);
+	const eventoRef = db.collection("events").doc(idEvento);
 	const eventoSnap = await eventoRef.get();
 
 	if (!eventoSnap.exists) {
@@ -52,160 +50,220 @@ const deleteEvent = async (idEvento) => {
 	}
 
 	await eventoRef.delete();
-	console.log(`Evento ${idEvento} eliminado correctamente`);
 };
 
 const addParticipant = async (idEvento, idUsuario) => {
-	const eventoRef = db.collection("eventos").doc(idEvento);
+	const userEventRef = db.collection("userEvents").doc(`${idUsuario}_${idEvento}`);
 
-	const participanteRef = eventoRef.collection("participants").doc(idUsuario);
+	const userEventSnap = await userEventRef.get();
 
-	const participanteSnap = await participanteRef.get();
-
-	if (participanteSnap.exists) {
-		throw new Error("El usuario ya es participante del evento");
+	if (!userEventSnap.exists) {
+		return;
 	}
 
-	const userSnap = await db.collection("users").doc(idUsuario).get();
-
-	if (!userSnap.exists) {
-		throw new Error("Usuario no encontrado");
-	}
-
-	const userData = userSnap.data();
-
-	await participanteRef.set({
-		...userData,
+	userEventRef.set({
+		uid: idUsuario,
+		idEvent: idEvento,
 		joinedAt: admin.firestore.FieldValue.serverTimestamp(),
 	});
+
+	const eventoRef = db.collection("events").doc(idEvento);
+	const participanteRef = eventoRef.collection("participants").doc(idUsuario);
 
 	await eventoRef.update({
 		participantsCount: admin.firestore.FieldValue.increment(1),
 	});
 
-	console.log(`Usuario ${idUsuario} agregado al evento ${idEvento}`);
+	await participanteRef.set({
+		uid: idUsuario,
+		joinedAt: admin.firestore.FieldValue.serverTimestamp(),
+		status: "active",
+	});
 };
 
 const removeParticipant = async (idEvento, idUsuario) => {
-	const eventoRef = db.collection("eventos").doc(idEvento);
-	const participanteRef = eventoRef.collection("participants").doc(idUsuario);
+	const userEventRef = db.collection("userEvents").doc(`${idUsuario}_${idEvento}`);
 
-	// Verificar si el participante existe
-	const participanteSnap = await participanteRef.get();
-	if (!participanteSnap.exists) {
-		throw new Error("El usuario no está registrado en este evento");
+	const userEventSnap = await userEventRef.get();
+
+	if (userEventSnap.exists) {
+		await userEventRef.delete();
+
+		const eventoRef = db.collection("events").doc(idEvento);
+		const participanteRef = eventoRef.collection("participants").doc(idUsuario);
+		const participanteSnap = await participanteRef.get();
+
+		await eventoRef.update({
+			participantsCount: admin.firestore.FieldValue.increment(-1),
+		});
+
+		if (participanteSnap.exists) {
+			await participanteRef.delete();
+		}
+	}
+};
+
+const likeFavorite = async (idEvento, idUsuario) => {
+	const favoriteRef = db.collection("userFavorites").doc(`${idUsuario}_${idEvento}`);
+
+	const favoriteSnap = await favoriteRef.get();
+
+	if (!favoriteSnap.exists) {
+		favoriteRef.set({
+			uid: idUsuario,
+			idEvent: idEvento,
+			favoriteAt: admin.firestore.FieldValue.serverTimestamp(),
+		});
 	}
 
-	// Eliminar al participante
-	await participanteRef.delete();
+	const eventoRef = db.collection("events").doc(idEvento);
 
-	// Decrementar el contador de participantes
 	await eventoRef.update({
-		participantsCount: admin.firestore.FieldValue.increment(-1),
+		favoritesCount: admin.firestore.FieldValue.increment(1),
 	});
+};
 
-	console.log(`Usuario ${idUsuario} eliminado del evento ${idEvento}`);
+const unlikeFavorite = async (idEvento, idUsuario) => {
+	const favoriteRef = db.collection("userFavorites").doc(`${idUsuario}_${idEvento}`);
+	const favoriteSnap = await favoriteRef.get();
+
+	if (favoriteSnap.exists) {
+		await favoriteRef.delete();
+	}
+
+	const eventoRef = db.collection("events").doc(idEvento);
+
+	await eventoRef.update({
+		favoritesCount: admin.firestore.FieldValue.increment(-1),
+	});
 };
 
 const getAllEvents = async () => {
-	const querySnapshot = await db.collection("events").get();
+	try {
+		const querySnapshot = await db.collection("events").get();
 
-	if (eventosSnap.empty) return [];
+		if (querySnapshot.empty) return [];
 
-	return getDataEvent(querySnapshot);
+		return getDataEvent(querySnapshot);
+	} catch (error) {
+		throw new Error("Error obteniendo eventos");
+	}
 };
 
 const getPopularEvents = async () => {
-	const querySnapshot = await db.collection("events").orderBy("participantsCount", "desc").limit(5).get();
+	try {
+		const eventRef = db.collection("events");
+		const querySnapshot = await eventRef.where("status", "==", "active").orderBy("participantsCount", "desc").limit(5).get();
 
-	if (eventosSnap.empty) {
-		return [];
+		if (querySnapshot.empty) return [];
+
+		// Campos a retornar
+		const fields = ["id", "title", "date", "hour", "category", "participantsCount"];
+
+		return getDataEvent(querySnapshot, fields);
+	} catch (error) {
+		throw new Error("Error obteniendo eventos populares");
 	}
-
-	return getDataEvent(querySnapshot);
 };
 
 const getUpcomingEvents = async () => {
-	const currentDate = admin.firestore.Timestamp.now();
-	const querySnapshot = await db.collection("events").where("date", ">=", currentDate).orderBy("date", "asc").limit(5).get();
+	try {
+		const currentDate = admin.firestore.Timestamp.now();
+		const querySnapshot = await db
+			.collection("events")
+			.where("date", ">=", currentDate)
+			.orderBy("date", "asc")
+			.limit(5)
+			.get();
 
-	if (eventosSnap.empty) return [];
+		if (querySnapshot.empty) return [];
 
-	return getDataEvent(querySnapshot);
+		// Campos a retornar
+		const fields = ["id", "title", "date", "hour"];
+
+		return getDataEvent(querySnapshot, fields);
+	} catch (error) {
+		throw new Error("Error obteniendo próximos eventos");
+	}
 };
 
 const getFavorites = async (uid) => {
-	let eventos = [];
+	try {
+		let eventos = [];
 
-	const querySnapshot = await db.collection("userFavorites").where("uid", "==", uid).get();
+		const eventRef = db.collection("userFavorites");
+		const querySnapshot = await eventRef.where("uid", "==", uid).get();
 
-	if (querySnapshot.empty) return eventos;
+		if (querySnapshot.empty) return eventos;
 
-	const idEvents = querySnapshot.docs.map((doc) => doc.data().idEvent);
+		const idEvents = querySnapshot.docs.map((doc) => doc.data().idEvent);
 
-	const chunks = chunkArray(idEvents, 10);
+		const chunks = chunkArray(idEvents, 10);
 
-	for (const chunk of chunks) {
-		const eventsSnap = await db.collection("eventos").where("__name__", "in", chunk).get();
+		for (const chunk of chunks) {
+			const eventsSnap = await db.collection("events").where("__name__", "in", chunk).get();
+			const data = getDataEvent(eventsSnap);
 
-		const data = getDataEvent(eventsSnap);
+			eventos = eventos.concat(data);
+		}
 
-		eventos = eventos.concat(data);
+		return eventos;
+	} catch (error) {
+		throw new Error("Error obteniendo eventos favoritos");
 	}
-
-	return eventos;
-};
-
-const getMyCreatedEvents = async (uid) => {
-	const querySnapshot = await db.collection("events").where("createdBy", "==", uid).get();
-
-	if (eventosSnap.empty) return [];
-
-	return getDataEvent(querySnapshot);
 };
 
 const getHistoryEvents = async (uid) => {
-	let events = [];
+	try {
+		let events = [];
 
-	const querySnapshot = await db.collection("userEvents").where("uid", "==", uid).where("status", "==", "finished").get();
+		const eventRef = db.collection("userEvents");
+		const querySnapshot = await eventRef.where("uid", "==", uid).where("status", "==", "finished").get();
 
-	if (querySnapshot.empty) return [];
+		if (querySnapshot.empty) return [];
 
-	const idEvents = querySnapshot.docs.map((doc) => doc.data().idEvent);
+		const idEvents = querySnapshot.docs.map((doc) => doc.data().idEvent);
 
-	const chunks = chunkArray(idEvents, 10);
+		const chunks = chunkArray(idEvents, 10);
 
-	for (const chunk of chunks) {
-		const eventsSnap = await db.collection("eventos").where("__name__", "in", chunk).get();
+		for (const chunk of chunks) {
+			const eventsSnap = await db.collection("events").where("__name__", "in", chunk).get();
 
-		const data = getDataEvent(eventsSnap);
+			const data = getDataEvent(eventsSnap);
 
-		events = events.concat(data);
+			events = events.concat(data);
+		}
+
+		return events;
+	} catch (error) {
+		throw new Error("Error obteniendo eventos históricos");
 	}
-
-	return events;
 };
 
-const getParticipatedEvents = async (uid) => {
-	let events = [];
+const getMyEvents = async (uid, role) => {
+	try {
+		const eventos = [];
 
-	const querySnapshot = await db.collection("userEvents").where("uid", "==", uid).where("status", "==", "active").get();
+		if (role === "ADMIN" || role === "COORDINADOR") {
+			const eventRef = db.collection("events");
+			const querySnapshot = await eventRef.where("createdBy", "==", uid).get();
 
-	if (querySnapshot.empty) return [];
+			if (querySnapshot.empty) return eventos;
 
-	const idEvents = querySnapshot.docs.map((doc) => doc.data().idEvent);
+			return getDataEvent(querySnapshot);
+		}
 
-	const chunks = chunkArray(idEvents, 10);
+		const eventRef = db.collection("userEvents");
+		const querySnapshot = await eventRef.where("uid", "==", uid).where("status", "==", "active").get();
 
-	for (const chunk of chunks) {
-		const eventsSnap = await db.collection("eventos").where("__name__", "in", chunk).get();
+		if (!querySnapshot.empty) {
+			return getDataEvent(querySnapshot);
+		}
 
-		const data = getDataEvent(eventsSnap);
-
-		events = events.concat(data);
+		return [];
+	} catch (error) {
+		throw new Error("Error obteniendo mis eventos");
 	}
-
-	return events;
 };
 
 /** FUNCTIONS **/
@@ -215,7 +273,7 @@ const getParticipatedEvents = async (uid) => {
  * @param {*} querySnapshot
  * @returns {Array} Array de eventos.
  */
-const getDataEvent = (querySnapshot) => {
+const getDataEvent = (querySnapshot, fields = null) => {
 	const eventos = [];
 
 	for (const doc of querySnapshot.docs) {
@@ -227,12 +285,25 @@ const getDataEvent = (querySnapshot) => {
 
 		const dateObj = data.date.toDate();
 
-		return {
+		const event = {
 			...data,
 			id: data.id,
 			date: dateObj.toISOString().split("T")[0],
 			hour: dateObj.toTimeString().split(" ")[0].slice(0, 5),
 		};
+
+		if (fields) {
+			const filteredEvent = {};
+			fields.forEach((field) => {
+				if (event.hasOwnProperty(field)) {
+					filteredEvent[field] = event[field];
+				}
+			});
+
+			eventos.push(filteredEvent);
+		} else {
+			eventos.push(event);
+		}
 	}
 
 	return eventos;
@@ -244,12 +315,13 @@ module.exports = {
 	deleteEvent,
 	addParticipant,
 	removeParticipant,
+	likeFavorite,
+	unlikeFavorite,
 	getAllEvents,
 	getPopularEvents,
 	getUpcomingEvents,
 	getFavorites,
-	getMyCreatedEvents,
 	getHistoryEvents,
-	getParticipatedEvents,
 	getDataEvent,
+	getMyEvents,
 };

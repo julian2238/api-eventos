@@ -84,7 +84,7 @@ const refreshToken = async (req, res) => {
 			});
 		}
 
-		const data = authService.validateRefreshToken(refreshToken);
+		const data = await authService.validateRefreshToken(refreshToken);
 
 		return res.json({
 			status: true,

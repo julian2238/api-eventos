@@ -40,7 +40,7 @@ const getEventosById = async (req, res) => {
 		}
 
 		//* Obtener el evento por ID
-		const eventoRef = db.collection("eventos").doc(idEvento);
+		const eventoRef = db.collection("events").doc(idEvento);
 		const eventoSnap = await eventoRef.get();
 
 		if (!eventoSnap.exists) {
@@ -60,56 +60,6 @@ const getEventosById = async (req, res) => {
 			status: true,
 			message: "Evento obtenido correctamente",
 			data: dataEvento,
-		});
-	} catch (error) {
-		res.status(500).send({
-			status: false,
-			message: error.message || "Internal server error",
-		});
-	}
-};
-
-const participarEvento = async (req, res) => {
-	try {
-		const { idEvento, idUsuario } = req.body;
-
-		if (!idEvento || !idUsuario) {
-			return res.status(400).send({
-				status: false,
-				message: "Faltan campos requeridos",
-			});
-		}
-
-		await eventService.addParticipant(idEvento, idUsuario);
-
-		res.status(200).send({
-			status: true,
-			message: "Se ha unido al evento correctamente",
-		});
-	} catch (error) {
-		res.status(500).send({
-			status: false,
-			message: error.message || "Internal server error",
-		});
-	}
-};
-
-const abandonarEvento = async (req, res) => {
-	try {
-		const { idEvento, idUsuario } = req.body;
-
-		if (!idEvento || !idUsuario) {
-			return res.status(400).send({
-				status: false,
-				message: "Faltan campos requeridos",
-			});
-		}
-
-		await eventService.removeParticipant(idEvento, idUsuario);
-
-		res.status(200).send({
-			status: true,
-			message: "Se ha abandonado el evento correctamente",
 		});
 	} catch (error) {
 		res.status(500).send({
@@ -203,12 +153,120 @@ const deleteEventos = async (req, res) => {
 	}
 };
 
+const participarEvento = async (req, res) => {
+	try {
+		const idEvento = req.params.id;
+		const idUsuario = req.user.uid;
+
+		if (!idEvento || !idUsuario) {
+			return res.status(400).send({
+				status: false,
+				message: "Faltan campos requeridos",
+			});
+		}
+
+		await eventService.addParticipant(idEvento, idUsuario);
+
+		res.status(200).send({
+			status: true,
+			message: "Se ha unido al evento correctamente",
+		});
+	} catch (error) {
+		res.status(500).send({
+			status: false,
+			message: error.message || "Internal server error",
+		});
+	}
+};
+
+const abandonarEvento = async (req, res) => {
+	try {
+		const idEvento = req.params.id;
+		const idUsuario = req.user.uid;
+
+		if (!idEvento || !idUsuario) {
+			return res.status(400).send({
+				status: false,
+				message: "Faltan campos requeridos",
+			});
+		}
+
+		await eventService.removeParticipant(idEvento, idUsuario);
+
+		res.status(200).send({
+			status: true,
+			message: "Se ha abandonado el evento correctamente",
+		});
+	} catch (error) {
+		res.status(500).send({
+			status: false,
+			message: error.message || "Internal server error",
+		});
+	}
+};
+
+const darFavorito = async (req, res) => {
+	try {
+		const idEvento = req.params.id;
+		const idUsuario = req.user.uid;
+
+		if (!idEvento || !idUsuario) {
+			return res.status(400).send({
+				status: false,
+				message: "Faltan campos requeridos",
+			});
+		}
+
+		await eventService.likeFavorite(idEvento, idUsuario);
+
+		res.json({
+			status: true,
+			message: "Evento marcado como favorito correctamente",
+			data: null,
+		});
+	} catch (error) {
+		res.status(500).send({
+			status: false,
+			message: error.message || "Internal server error",
+		});
+	}
+};
+
+const quitarFavorito = async (req, res) => {
+	try {
+		const idEvento = req.params.id;
+		const idUsuario = req.user.uid;
+
+		if (!idEvento || !idUsuario) {
+			return res.status(400).send({
+				status: false,
+				message: "Faltan campos requeridos",
+			});
+		}
+
+		await eventService.unlikeFavorite(idEvento, idUsuario);
+
+		res.json({
+			status: true,
+			message: "Evento quitado de favoritos correctamente",
+			data: null,
+		});
+	} catch (error) {
+		res.status(500).send({
+			status: false,
+			message: error.message || "Internal server error",
+		});
+	}
+};
+
 module.exports = {
 	getEventos,
 	getEventosById,
-	participarEvento,
-	abandonarEvento,
 	postEventos,
 	putEventos,
 	deleteEventos,
+	participarEvento,
+	abandonarEvento,
+	darFavorito,
+	quitarFavorito,
 };

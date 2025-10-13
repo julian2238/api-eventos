@@ -11,18 +11,16 @@ const getInitialData = async (req, res) => {
 			listAllEvents,
 			listPopularEvents,
 			listUpcomingEvents,
-			listMyCreatedEvents,
+			listMyEvents,
 			listFavorites,
-			listParticipatedEvents,
 			listHistoryEvents,
 		] = await Promise.all([
 			categoryServices.getCategories(),
 			eventServices.getAllEvents(),
 			eventServices.getPopularEvents(),
 			eventServices.getUpcomingEvents(),
-			eventServices.getMyCreatedEvents(uid),
+			eventServices.getMyEvents(uid, role),
 			eventServices.getFavorites(uid),
-			eventServices.getParticipatedEvents(uid),
 			eventServices.getHistoryEvents(uid),
 		]);
 
@@ -34,9 +32,8 @@ const getInitialData = async (req, res) => {
 				listAllEvents,
 				listPopularEvents,
 				listUpcomingEvents,
-				listMyCreatedEvents,
+				listMyEvents,
 				listFavorites,
-				listParticipatedEvents,
 				listHistoryEvents,
 			},
 		});

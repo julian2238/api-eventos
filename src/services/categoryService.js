@@ -1,15 +1,19 @@
 const { db } = require("../firebase");
 
 const getCategories = async () => {
-	const categoriesSnap = await db.collection("categories").get();
+	try {
+		const categoriesSnap = await db.collection("categories").get();
 
-	const categories = [];
+		const categories = [];
 
-	categoriesSnap.forEach((doc) => {
-		categories.push({ ...doc.data() });
-	});
+		categoriesSnap.forEach((doc) => {
+			categories.push({ ...doc.data() });
+		});
 
-	return categories;
+		return categories;
+	} catch (error) {
+		throw new Error("Error obteniendo categorías");
+	}
 };
 
 module.exports = {

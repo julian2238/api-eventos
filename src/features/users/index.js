@@ -4,6 +4,7 @@ const FirebaseUserRepository = require('./infrastructure/repositories/FirebaseUs
 const GetUsersUseCase = require('./application/useCases/GetUsersUseCase');
 const GetUserByIdUseCase = require('./application/useCases/GetUserByIdUseCase');
 const UpdateUserUseCase = require('./application/useCases/UpdateUserUseCase');
+const DeleteUserUseCase = require('./application/useCases/DeleteUserUseCase');
 
 const UserController = require('./presentation/controllers/UserController');
 const createUserRoutes = require('./presentation/routes/userRoutes');
@@ -15,12 +16,14 @@ const userRepository = new FirebaseUserRepository();
 const getUsersUseCase = new GetUsersUseCase(userRepository);
 const getUserByIdUseCase = new GetUserByIdUseCase(userRepository);
 const updateUserUseCase = new UpdateUserUseCase(userRepository);
+const deleteUserUseCase = new DeleteUserUseCase(userRepository);
 
 // Initialize controller
 const userController = new UserController(
   getUsersUseCase,
   getUserByIdUseCase,
-  updateUserUseCase
+  updateUserUseCase,
+  deleteUserUseCase
 );
 
 module.exports = {

@@ -5,11 +5,13 @@ class UserController {
   constructor(
     getUsersUseCase,
     getUserByIdUseCase,
-    updateUserUseCase
+    updateUserUseCase,
+    deleteUserUseCase
   ) {
     this.getUsersUseCase = getUsersUseCase;
     this.getUserByIdUseCase = getUserByIdUseCase;
     this.updateUserUseCase = updateUserUseCase;
+    this.deleteUserUseCase = deleteUserUseCase;
   }
 
   getUsers = asyncHandler(async (req, res) => {
@@ -26,6 +28,15 @@ class UserController {
     const result = await this.updateUserUseCase.execute(
       req.params.id,
       req.body,
+      req.user.uid,
+      req.user.role
+    );
+    return successResponse(res, 200, result.message, result.data);
+  });
+
+  deleteUser = asyncHandler(async (req, res) => {
+    const result = await this.deleteUserUseCase.execute(
+      req.params.id,
       req.user.uid,
       req.user.role
     );

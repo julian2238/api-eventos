@@ -23,6 +23,12 @@ const createUserRoutes = (userController, authMiddleware) => {
     userController.updateUser
   );
 
+  router.delete('/:id',
+    asyncHandler(authMiddleware.authenticate),
+    asyncHandler(authMiddleware.authorize(['ADMIN'])),
+    userController.deleteUser
+  );
+
   return router;
 };
 

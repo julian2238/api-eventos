@@ -19,6 +19,19 @@ const createCategoryRoutes = (categoryController, authMiddleware) => {
     categoryController.createCategory
   );
 
+  router.put('/:id',
+    asyncHandler(authMiddleware.authenticate),
+    asyncHandler(authMiddleware.authorize(['ADMIN'])),
+    validateRequest('category', 'create'),
+    categoryController.updateCategory
+  );
+
+  router.delete('/:id',
+    asyncHandler(authMiddleware.authenticate),
+    asyncHandler(authMiddleware.authorize(['ADMIN'])),
+    categoryController.deleteCategory
+  );
+
   return router;
 };
 

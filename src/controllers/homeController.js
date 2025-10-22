@@ -12,7 +12,7 @@ const getInitialData = async (req, res) => {
 			listPopularEvents,
 			listUpcomingEvents,
 			listMyEvents,
-			listFavorites,
+			listFavoriteEvents,
 			listHistoryEvents,
 		] = await Promise.all([
 			categoryServices.getCategories(),
@@ -33,7 +33,7 @@ const getInitialData = async (req, res) => {
 				listPopularEvents,
 				listUpcomingEvents,
 				listMyEvents,
-				listFavorites,
+				listFavoriteEvents,
 				listHistoryEvents,
 			},
 		});

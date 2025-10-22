@@ -57,9 +57,7 @@ const addParticipant = async (idEvento, idUsuario) => {
 
 	const userEventSnap = await userEventRef.get();
 
-	if (!userEventSnap.exists) {
-		return;
-	}
+	if (userEventSnap.exists) return;
 
 	userEventRef.set({
 		uid: idUsuario,
@@ -179,7 +177,7 @@ const getUpcomingEvents = async () => {
 		if (querySnapshot.empty) return [];
 
 		// Campos a retornar
-		const fields = ["id", "title", "date", "hour"];
+		const fields = ["id", "title", "category", "date", "hour"];
 
 		return getDataEvent(querySnapshot, fields);
 	} catch (error) {
@@ -190,6 +188,7 @@ const getUpcomingEvents = async () => {
 const getFavorites = async (uid) => {
 	try {
 		let eventos = [];
+		const fields = ["id", "title", "description", "category", "date", "hour", "participantsCount"];
 
 		const eventRef = db.collection("userFavorites");
 		const querySnapshot = await eventRef.where("uid", "==", uid).get();
@@ -202,7 +201,7 @@ const getFavorites = async (uid) => {
 
 		for (const chunk of chunks) {
 			const eventsSnap = await db.collection("events").where("__name__", "in", chunk).get();
-			const data = getDataEvent(eventsSnap);
+			const data = getDataEvent(eventsSnap, fields);
 
 			eventos = eventos.concat(data);
 		}
@@ -242,13 +241,13 @@ const getHistoryEvents = async (uid) => {
 
 const getMyEvents = async (uid, role) => {
 	try {
-		const eventos = [];
+		const fields = ["id", "title", "category", "participantsCount"];
 
 		if (role === "ADMIN" || role === "COORDINADOR") {
 			const eventRef = db.collection("events");
 			const querySnapshot = await eventRef.where("createdBy", "==", uid).get();
 
-			if (querySnapshot.empty) return eventos;
+			if (querySnapshot.empty) return [];
 
 			return getDataEvent(querySnapshot);
 		}
@@ -287,10 +286,12 @@ const getDataEvent = (querySnapshot, fields = null) => {
 
 		const event = {
 			...data,
-			id: data.id,
+			id: doc.id,
 			date: dateObj.toISOString().split("T")[0],
 			hour: dateObj.toTimeString().split(" ")[0].slice(0, 5),
 		};
+
+		console.log(event);
 
 		if (fields) {
 			const filteredEvent = {};
